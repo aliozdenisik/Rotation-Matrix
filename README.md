@@ -8,6 +8,19 @@ The page combines:
 - a 3D viewer built with Three.js,
 - and coordinate transformation output for a reference point.
 
+## Course Information
+
+- Course Code: `DEN 462E`
+- Course Title (TR): `Deniz araçlarının hareketleri ve kontrolü`
+- Course Title (EN): `Motions&Control of Mar.Vehic.`
+- Class Instructor: `Prof. Dr. Ömer Kemal Kınacı`
+
+## Purpose
+
+This project was prepared to support learning by making abstract motion and rotation topics more interactive and visual.
+
+It was also developed as a personal learning tool to better understand the subject through hands-on exploration.
+
 ## Features
 
 - Interactive sliders for `psi`, `theta`, and `phi`
@@ -29,7 +42,7 @@ The page combines:
 No build step is required.
 
 1. Clone the repository
-2. Open `index.html` in your browser
+2. Open `rotation-matrix-interactive.html` in your browser
 
 For local development with a static server, for example:
 
@@ -41,7 +54,7 @@ Then visit `http://localhost:8080`.
 
 ## Project Structure
 
-- `index.html`: app layout, styles, and logic
+- `rotation-matrix-interactive.html`: app layout, styles, and logic
 - `submarine-no-clip.png`: visual asset used by the project
 
 ## Notes
