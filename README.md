@@ -21,6 +21,10 @@ This project was prepared to support learning by making abstract motion and rota
 
 It was also developed as a personal learning tool to better understand the subject through hands-on exploration.
 
+## Screenshot
+
+![Rotation Matrix Interactive Tool](screenshot.png)
+
 ## Features
 
 - Interactive sliders for `psi`, `theta`, and `phi`
