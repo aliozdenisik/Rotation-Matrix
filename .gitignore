@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local tooling folders
+.firecrawl/
+.playwright-mcp/
+.claude/
+
+# Logs & temp
+*.log
+*.tmp
+
+# Documentation/source files to exclude
+*.pdf
