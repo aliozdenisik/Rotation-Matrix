@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rotation Matrix &mdash; Interactive Learning Tool</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- KaTeX -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
+<!-- Three.js Import Map -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+/* ===== Design Tokens ===== */
+:root {
+  --bg: #F5F5F0;
+  --card: #FFFFFF;
+  --text-primary: #1A2332;
+  --text-secondary: #4A5568;
+  --text-muted: #8896A6;
+  --accent: #2B4C7E;
+  --accent-light: #5B7FA5;
+  --accent-bg: #EDF1F7;
+  --accent-bg-dark: #D6DEE9;
+  --border: #D8DFE8;
+  --border-light: #EEF1F5;
+  --axis-x: #D94040;
+  --axis-y: #2EA85A;
+  --axis-z: #3388CC;
+  --point-color: #E8A838;
+  --font-serif: 'Crimson Pro', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow-card: 0 2px 8px rgba(26,35,50,0.06), 0 0 1px rgba(26,35,50,0.08);
+  --shadow-lifted: 0 8px 24px rgba(26,35,50,0.10), 0 2px 6px rgba(26,35,50,0.06);
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-serif);
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.72;
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ===== Layout ===== */
+.container {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ===== Header ===== */
+.site-header {
+  padding: 44px 0 24px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 28px;
+}
+.site-header h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.site-header h1 span {
+  font-weight: 300;
+  color: var(--accent);
+}
+.site-header .subtitle {
+  font-size: 1.08rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+.site-header .credit {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 5px;
+  font-style: italic;
+}
+
+/* ===== Step Tabs ===== */
+.step-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 24px;
+  background: var(--border-light);
+  border-radius: var(--radius);
+  padding: 4px;
+  flex-wrap: wrap;
+}
+.step-tab {
+  padding: 10px 22px;
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  font-weight: 500;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.step-tab:hover {
+  color: var(--accent);
+  background: rgba(255,255,255,0.7);
+}
+.step-tab.active {
+  color: var(--accent);
+  background: var(--card);
+  box-shadow: 0 1px 4px rgba(26,35,50,0.08);
+  font-weight: 600;
+}
+
+/* ===== Main Grid ===== */
+.main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+  align-items: start;
+}
+
+/* ===== Card base ===== */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* ===== 3D Viewer ===== */
+.viewer-card {
+  overflow: hidden;
+  position: relative;
+}
+.viewer-card canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+#viewer-container {
+  width: 100%;
+  aspect-ratio: 5 / 4;
+  position: relative;
+  background: linear-gradient(180deg, #EEF2F7 0%, #DDE4ED 100%);
+}
+.viewer-legend {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  padding: 10px 16px;
+  background: linear-gradient(0deg, rgba(255,255,255,0.92) 60%, rgba(255,255,255,0));
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.viewer-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend-swatch {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+}
+.legend-swatch.dashed {
+  background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px);
+  height: 2px;
+}
+.legend-swatch.solid {
+  height: 3px;
+}
+.legend-swatch.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ===== Theory Panel ===== */
+.theory-card {
+  padding: 28px 32px 24px;
+  overflow-y: auto;
+  max-height: 560px;
+}
+.theory-card h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+.theory-card h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 22px 0 10px;
+}
+.theory-card p {
+  margin-bottom: 14px;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+.equation-block {
+  margin: 16px 0;
+  padding: 14px 20px;
+  background: var(--accent-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  overflow-x: auto;
+}
+.equation-block .katex-display { margin: 0; }
+.equation-block .katex { font-size: 1.05em; }
+
+/* ===== SVG Diagram ===== */
+.diagram-container {
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+.diagram-container svg {
+  max-width: 240px;
+  width: 100%;
+  height: auto;
+}
+
+/* ===== Step Navigation Buttons ===== */
+.step-nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-light);
+}
+.step-btn {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 9px 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--accent);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.step-btn:hover:not(:disabled) {
+  background: var(--accent-bg);
+  border-color: var(--accent-light);
+  box-shadow: var(--shadow-card);
+}
+.step-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ===== Controls Row ===== */
+.controls-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+/* ===== Slider Controls ===== */
+.controls-card {
+  padding: 24px 28px;
+}
+.controls-card .card-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  transition: opacity var(--transition);
+}
+.slider-row.disabled {
+  opacity: 0.25;
+  pointer-events: none;
+}
+.slider-label {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 90px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.axis-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.slider-wrap {
+  flex: 1;
+  position: relative;
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  cursor: pointer;
+}
+.slider-psi::-webkit-slider-thumb { background: var(--axis-z); }
+.slider-psi::-moz-range-thumb { background: var(--axis-z); }
+.slider-theta::-webkit-slider-thumb { background: var(--axis-y); }
+.slider-theta::-moz-range-thumb { background: var(--axis-y); }
+.slider-phi::-webkit-slider-thumb { background: var(--axis-x); }
+.slider-phi::-moz-range-thumb { background: var(--axis-x); }
+.slider-value {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 60px;
+  text-align: right;
+  color: var(--text-primary);
+}
+.slider-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.reset-btn {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.reset-btn:hover {
+  color: var(--axis-x);
+  border-color: var(--axis-x);
+  background: #FFF5F5;
+}
+
+/* ===== Reference Point Card ===== */
+.ref-point-card {
+  padding: 24px 28px;
+}
+.ref-point-card .card-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.ref-point-info {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.9;
+  color: var(--text-secondary);
+}
+.ref-point-info .label {
+  display: inline-block;
+  min-width: 100px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.ref-point-info .value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.ref-point-info .point-color {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--point-color);
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.ref-point-inputs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  align-items: center;
+}
+.ref-point-inputs label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ref-point-inputs input[type="number"] {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  width: 64px;
+  padding: 5px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--card);
+  color: var(--text-primary);
+  text-align: center;
+  transition: border-color var(--transition);
+  -moz-appearance: textfield;
+}
+.ref-point-inputs input[type="number"]::-webkit-inner-spin-button,
+.ref-point-inputs input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.ref-point-inputs input[type="number"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(43,76,126,0.12);
+}
+
+/* ===== Combined Matrix Display ===== */
+.matrix-card {
+  padding: 24px 28px;
+  margin-bottom: 28px;
+  overflow-x: auto;
+}
+.matrix-card .card-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+.matrix-equation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  justify-content: center;
+  min-width: min-content;
+}
+.matrix-block {
+  text-align: center;
+  flex-shrink: 0;
+}
+.matrix-block .matrix-label {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.matrix-block .matrix-label .angle-sym {
+  font-style: italic;
+  font-weight: 600;
+}
+.matrix-block table {
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.matrix-block td {
+  padding: 6px 10px;
+  text-align: right;
+  min-width: 62px;
+  transition: background 0.35s ease, color 0.35s ease;
+  border: 1px solid var(--border-light);
+}
+.matrix-block td.pulse {
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 600;
+}
+.matrix-block.result-matrix table {
+  border-color: var(--accent-bg-dark);
+  background: var(--accent-bg);
+}
+.matrix-block.result-matrix td {
+  border-color: var(--accent-bg-dark);
+  font-weight: 600;
+}
+.matrix-op {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+/* ===== Gimbal Warning ===== */
+.gimbal-warning {
+  display: none;
+  padding: 8px 14px;
+  background: #FFF5F5;
+  border: 1px solid #FED7D7;
+  border-radius: var(--radius);
+  color: #C53030;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+}
+.gimbal-warning.visible { display: block; }
+
+/* ===== Responsive ===== */
+@media (max-width: 960px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .controls-row { grid-template-columns: 1fr; }
+  .theory-card { max-height: none; }
+  .site-header h1 { font-size: 1.7rem; }
+  .container { padding: 0 16px; }
+}
+@media (max-width: 700px) {
+  .matrix-equation { flex-wrap: wrap; justify-content: center; }
+}
+
+/* ===== KaTeX Overrides ===== */
+.katex { font-size: 1.05em; }
+.katex-display > .katex { font-size: 1.1em; }
+
+/* ===== Scrollbar ===== */
+.theory-card::-webkit-scrollbar { width: 5px; }
+.theory-card::-webkit-scrollbar-track { background: transparent; }
+.theory-card::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.theory-card::-webkit-scrollbar-thumb:hover { background: var(--accent-light); }
+
+/* ===== Footer ===== */
+.site-footer {
+  text-align: center;
+  padding: 24px 0 32px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header class="site-header">
+    <h1>Rotation Matrix <span>Interactive Tool</span></h1>
+    <div class="subtitle">z-y-x Euler Angle Convention &mdash; Yaw, Pitch, Roll</div>
+    <div class="credit">Based on lecture notes by Prof. Dr. &Ouml;mer Kemal K&inodot;nac&inodot;</div>
+  </header>
+
+  <!-- Step Tabs -->
+  <nav class="step-tabs" id="step-tabs">
+    <button class="step-tab active" data-step="0">Introduction</button>
+    <button class="step-tab" data-step="1">S1: Yaw &psi;</button>
+    <button class="step-tab" data-step="2">S2: Pitch &theta;</button>
+    <button class="step-tab" data-step="3">S3: Roll &phi;</button>
+    <button class="step-tab" data-step="4">Combined Matrix</button>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-grid">
+    <div class="viewer-card card">
+      <div id="viewer-container"></div>
+      <div class="viewer-legend">
+        <div class="legend-item"><span class="legend-swatch dashed" style="color:#999"></span> Global (XYZ)</div>
+        <div class="legend-item"><span class="legend-swatch solid" style="background:var(--axis-x);display:inline-block"></span><span class="legend-swatch solid" style="background:var(--axis-y);display:inline-block"></span><span class="legend-swatch solid" style="background:var(--axis-z);display:inline-block"></span> Body-Fixed</div>
+        <div class="legend-item"><span class="legend-swatch dot" style="background:var(--point-color)"></span> P (global, fixed)</div>
+      </div>
+    </div>
+    <div class="theory-card card" id="theory-panel"></div>
+  </div>
+
+  <!-- Controls Row -->
+  <div class="controls-row">
+    <div class="controls-card card">
+      <div class="card-title">Angle Controls</div>
+      <div class="slider-row" id="row-psi">
+        <div class="slider-label"><span class="axis-dot" style="background:var(--axis-z)"></span>&psi; (Yaw)</div>
+        <div class="slider-wrap"><input type="range" id="slider-psi" class="slider-psi" min="-180" max="180" value="0" step="0.5"></div>
+        <div class="slider-value" id="val-psi">0.0&deg;</div>
+      </div>
+      <div class="slider-row" id="row-theta">
+        <div class="slider-label"><span class="axis-dot" style="background:var(--axis-y)"></span>&theta; (Pitch)</div>
+        <div class="slider-wrap"><input type="range" id="slider-theta" class="slider-theta" min="-89" max="89" value="0" step="0.5"></div>
+        <div class="slider-value" id="val-theta">0.0&deg;</div>
+      </div>
+      <div class="slider-row" id="row-phi">
+        <div class="slider-label"><span class="axis-dot" style="background:var(--axis-x)"></span>&phi; (Roll)</div>
+        <div class="slider-wrap"><input type="range" id="slider-phi" class="slider-phi" min="-180" max="180" value="0" step="0.5"></div>
+        <div class="slider-value" id="val-phi">0.0&deg;</div>
+      </div>
+      <div class="slider-footer">
+        <button class="reset-btn" id="reset-btn">Reset All</button>
+        <div class="gimbal-warning" id="gimbal-warning">Pitch near &plusmn;90&deg; &mdash; gimbal lock</div>
+      </div>
+    </div>
+
+    <div class="ref-point-card card">
+      <div class="card-title">Reference Point P (fixed in space)</div>
+      <div class="ref-point-inputs">
+        <label style="color:var(--axis-x)">x: <input type="number" id="ref-px" value="1.5" step="0.1" min="-5" max="5"></label>
+        <label style="color:var(--axis-y)">y: <input type="number" id="ref-py" value="0" step="0.1" min="-5" max="5"></label>
+        <label style="color:var(--axis-z)">z: <input type="number" id="ref-pz" value="0" step="0.1" min="-5" max="5"></label>
+      </div>
+      <div class="ref-point-info">
+        <div><span class="label"><span class="point-color"></span>P (global):</span> <span class="value" id="ref-global">[1.50, 0.00, 0.00]</span></div>
+        <div><span class="label"><span class="point-color"></span>P (in rotated coords):</span> <span class="value" id="ref-body">[1.50, 0.00, 0.00]</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Combined Matrix Display -->
+  <div class="matrix-card card" id="combined-matrix-section">
+    <div class="card-title">Live Rotation Matrices</div>
+    <div class="matrix-equation" id="matrix-equation"></div>
+  </div>
+
+  <footer class="site-footer">Drag the 3D view to orbit &middot; Move sliders to rotate the ship &middot; Watch how body-fixed coordinates of P change as the coordinate system rotates</footer>
+</div>
+
+<!-- ===== Application Script ===== -->
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* =============================================
+   1. MathEngine
+   ============================================= */
+const MathEngine = (() => {
+  const { cos, sin, sqrt } = Math;
+
+  const computeRz = (psi) => [
+    [ cos(psi), sin(psi), 0],
+    [-sin(psi), cos(psi), 0],
+    [        0,        0, 1]
+  ];
+
+  const computeRy = (theta) => [
+    [cos(theta), 0, -sin(theta)],
+    [         0, 1,           0],
+    [sin(theta), 0,  cos(theta)]
+  ];
+
+  const computeRx = (phi) => [
+    [1,       0,        0],
+    [0, cos(phi), sin(phi)],
+    [0,-sin(phi), cos(phi)]
+  ];
+
+  const multiply = (A, B) => {
+    const R = [[0,0,0],[0,0,0],[0,0,0]];
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        for (let k = 0; k < 3; k++)
+          R[i][j] += A[i][k] * B[k][j];
+    return R;
+  };
+
+  const transformPoint = (R, p) => [
+    R[0][0]*p[0] + R[0][1]*p[1] + R[0][2]*p[2],
+    R[1][0]*p[0] + R[1][1]*p[1] + R[1][2]*p[2],
+    R[2][0]*p[0] + R[2][1]*p[1] + R[2][2]*p[2]
+  ];
+
+  const magnitude = (p) => sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
+
+  const toThreeMatrix4 = (m) => {
+    const mat = new THREE.Matrix4();
+    // Our matrices are row-major; Three.js constructor is row-major too
+    mat.set(
+      m[0][0], m[0][1], m[0][2], 0,
+      m[1][0], m[1][1], m[1][2], 0,
+      m[2][0], m[2][1], m[2][2], 0,
+      0, 0, 0, 1
+    );
+    mat.transpose(); // Three stores column-major internally
+    return mat;
+  };
+
+  return { computeRz, computeRy, computeRx, multiply, transformPoint, magnitude, toThreeMatrix4 };
+})();
+
+
+/* =============================================
+   2. StateManager
+   ============================================= */
+const StateManager = (() => {
+  const listeners = [];
+
+  const state = {
+    angles: { psi: 0, theta: 0, phi: 0 },
+    currentStep: 0,
+    matrices: { Rz: null, Ry: null, Rx: null, combined: null },
+    refPointGlobal: [1.5, 0, 0],  // User-defined point, fixed in global (Earth-fixed) frame
+    refPointBody: [1.5, 0, 0]     // Same point expressed in body-fixed (ship) frame: P_B = R · P
+  };
+
+  function recalc() {
+    const { psi, theta, phi } = state.angles;
+    state.matrices.Rz = MathEngine.computeRz(psi);
+    state.matrices.Ry = MathEngine.computeRy(theta);
+    state.matrices.Rx = MathEngine.computeRx(phi);
+    state.matrices.combined = MathEngine.multiply(
+      MathEngine.multiply(state.matrices.Rx, state.matrices.Ry),
+      state.matrices.Rz
+    );
+    // R maps Global → Body: P_B = R · P_global (PDF equation)
+    state.refPointBody = MathEngine.transformPoint(state.matrices.combined, state.refPointGlobal);
+  }
+
+  recalc();
+
+  const notify = () => listeners.forEach(fn => fn(state));
+
+  return {
+    setAngle(name, radians) { state.angles[name] = radians; recalc(); notify(); },
+    setStep(index) { state.currentStep = index; notify(); },
+    setRefPoint(x, y, z) { state.refPointGlobal = [x, y, z]; recalc(); notify(); },
+    subscribe(fn) { listeners.push(fn); fn(state); },
+    getState() { return state; },
+    resetAll() { state.angles.psi = 0; state.angles.theta = 0; state.angles.phi = 0; recalc(); notify(); }
+  };
+})();
+
+
+/* =============================================
+   3. Viewer3D
+   ============================================= */
+const Viewer3D = (() => {
+  let scene, camera, renderer, controls;
+  let bfcsGroup, refPointMesh, refLine;
+  const axisLength = 2.5;
+  const targetQuaternion = new THREE.Quaternion();
+  const targetGlobalPos = new THREE.Vector3();
+
+  function makeAxisArrow(dir, color, length, opts = {}) {
+    const group = new THREE.Group();
+    const { dashed = false, lineWidth = 2, opacity = 1 } = opts;
+
+    // Shaft - use cylinder for thickness
+    const shaftLen = length - 0.18;
+    const shaftRadius = dashed ? 0.012 : 0.022;
+    const shaftGeo = new THREE.CylinderGeometry(shaftRadius, shaftRadius, shaftLen, 8);
+    const shaftMat = new THREE.MeshStandardMaterial({
+      color, transparent: opacity < 1 || dashed, opacity: dashed ? 0.3 : opacity,
+      roughness: 0.5, metalness: 0.1
+    });
+    const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+    shaft.position.copy(dir.clone().multiplyScalar(shaftLen / 2));
+    shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    group.add(shaft);
+
+    if (dashed) {
+      // Add dash segments for dashed look
+      const dashCount = 12;
+      for (let i = 0; i < dashCount; i += 2) {
+        const seg = new THREE.Mesh(
+          new THREE.CylinderGeometry(shaftRadius * 1.8, shaftRadius * 1.8, shaftLen / dashCount * 0.8, 6),
+          new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.18, roughness: 0.6 })
+        );
+        const t = (i + 0.5) / dashCount;
+        seg.position.copy(dir.clone().multiplyScalar(t * shaftLen));
+        seg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+        group.add(seg);
+      }
+    }
+
+    // Cone tip
+    const coneH = 0.2;
+    const coneR = dashed ? 0.04 : 0.065;
+    const coneGeo = new THREE.ConeGeometry(coneR, coneH, 12);
+    const coneMat = new THREE.MeshStandardMaterial({
+      color, transparent: dashed, opacity: dashed ? 0.35 : 1,
+      roughness: 0.4, metalness: 0.15
+    });
+    const cone = new THREE.Mesh(coneGeo, coneMat);
+    cone.position.copy(dir.clone().multiplyScalar(length - coneH / 2));
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    group.add(cone);
+
+    return group;
+  }
+
+  function makeLabel(text, position, color, size = 0.3) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 128;
+    canvas.height = 64;
+    ctx.clearRect(0, 0, 128, 64);
+    ctx.font = 'bold 44px JetBrains Mono, monospace';
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 64, 34);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const mat = new THREE.SpriteMaterial({ map: texture, depthTest: false, sizeAttenuation: true });
+    const sprite = new THREE.Sprite(mat);
+    sprite.position.copy(position);
+    sprite.scale.set(size * 2, size, 1);
+    return sprite;
+  }
+
+  function makeBodyShape() {
+    const group = new THREE.Group();
+    const hullMat = new THREE.MeshStandardMaterial({
+      color: 0x2C4A6E, transparent: false,
+      roughness: 0.4, metalness: 0.25
+    });
+
+    // Hull — LatheGeometry with submarine profile revolved around Y, then rotated to +X
+    const profile = [
+      new THREE.Vector2(0,     0.65),
+      new THREE.Vector2(0.03,  0.63),
+      new THREE.Vector2(0.07,  0.58),
+      new THREE.Vector2(0.11,  0.49),
+      new THREE.Vector2(0.14,  0.36),
+      new THREE.Vector2(0.155, 0.18),
+      new THREE.Vector2(0.16,  0.0),
+      new THREE.Vector2(0.155, -0.15),
+      new THREE.Vector2(0.14,  -0.30),
+      new THREE.Vector2(0.11,  -0.42),
+      new THREE.Vector2(0.07,  -0.52),
+      new THREE.Vector2(0.04,  -0.58),
+      new THREE.Vector2(0,     -0.63),
+    ];
+    const hullGeo = new THREE.LatheGeometry(profile, 28);
+    const hull = new THREE.Mesh(hullGeo, hullMat);
+    hull.rotation.z = -Math.PI / 2; // bow → +X
+    group.add(hull);
+
+    // Conning tower (sail)
+    const sailMat = hullMat.clone();
+    sailMat.color = new THREE.Color(0x243F5C);
+    const sailGeo = new THREE.BoxGeometry(0.22, 0.13, 0.055);
+    const sail = new THREE.Mesh(sailGeo, sailMat);
+    sail.position.set(0.06, 0.19, 0);
+    group.add(sail);
+
+    // Bow diving planes
+    const bpMat = hullMat.clone();
+    const bowPlaneGeo = new THREE.BoxGeometry(0.08, 0.005, 0.16);
+    const bowPlanes = new THREE.Mesh(bowPlaneGeo, bpMat);
+    bowPlanes.position.set(0.44, 0, 0);
+    group.add(bowPlanes);
+
+    // Stern cruciform fins
+    const finMat = hullMat.clone();
+    const hFin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.005, 0.26), finMat);
+    hFin.position.set(-0.55, 0, 0);
+    group.add(hFin);
+    const vFin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.26, 0.005), finMat);
+    vFin.position.set(-0.55, 0, 0);
+    group.add(vFin);
+
+    // Propeller cone
+    const propGeo = new THREE.ConeGeometry(0.035, 0.07, 8);
+    const prop = new THREE.Mesh(propGeo, finMat);
+    prop.rotation.z = Math.PI / 2;
+    prop.position.set(-0.67, 0, 0);
+    group.add(prop);
+
+    // Align model "up" with z-axis (marine convention: z is vertical)
+    group.rotation.x = Math.PI / 2;
+    return group;
+  }
+
+  function init() {
+    const container = document.getElementById('viewer-container');
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+
+    // Use z-up world so yaw=z, pitch=y, roll=x matches marine convention
+    THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
+
+    // Scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xEEF2F7);
+    scene.fog = new THREE.FogExp2(0xEEF2F7, 0.04);
+
+    // Camera
+    camera = new THREE.PerspectiveCamera(38, w / h, 0.1, 100);
+    camera.position.set(4.2, 3.2, 4.2);
+    camera.up.set(0, 0, 1);
+
+    // Renderer
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    container.appendChild(renderer.domElement);
+
+    // Lights
+    const ambient = new THREE.AmbientLight(0xFFFFFF, 0.65);
+    scene.add(ambient);
+    const dirLight = new THREE.DirectionalLight(0xFFFFFF, 0.9);
+    dirLight.position.set(5, 8, 4);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+    const fillLight = new THREE.DirectionalLight(0xB0C4DE, 0.3);
+    fillLight.position.set(-3, 2, -2);
+    scene.add(fillLight);
+
+    // Controls
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.07;
+    controls.minDistance = 2.5;
+    controls.maxDistance = 12;
+    controls.target.set(0, 0, 0.3);
+    controls.update();
+
+    // Ground plane
+    const groundGeo = new THREE.PlaneGeometry(14, 14);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0xDDE4ED, roughness: 0.95 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.position.z = -0.22;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Grid on ground
+    const grid = new THREE.GridHelper(14, 28, 0xC8D0DA, 0xD4DCE5);
+    grid.rotation.x = Math.PI / 2;
+    grid.position.z = -0.21;
+    scene.add(grid);
+
+    // Origin marker
+    const originGeo = new THREE.SphereGeometry(0.06, 16, 16);
+    const originMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.4 });
+    const originSphere = new THREE.Mesh(originGeo, originMat);
+    scene.add(originSphere);
+
+    // ---- GCS (Global) axes - dashed, subtle ----
+    const gcsGroup = new THREE.Group();
+    gcsGroup.add(makeAxisArrow(new THREE.Vector3(1, 0, 0), '#D94040', axisLength, { dashed: true }));
+    gcsGroup.add(makeAxisArrow(new THREE.Vector3(0, 1, 0), '#2EA85A', axisLength, { dashed: true }));
+    gcsGroup.add(makeAxisArrow(new THREE.Vector3(0, 0, 1), '#3388CC', axisLength, { dashed: true }));
+    gcsGroup.add(makeLabel('X', new THREE.Vector3(axisLength + 0.18, 0, 0), '#D94040'));
+    gcsGroup.add(makeLabel('Y', new THREE.Vector3(0, axisLength + 0.18, 0), '#2EA85A'));
+    gcsGroup.add(makeLabel('Z', new THREE.Vector3(0, 0, axisLength + 0.18), '#3388CC'));
+    scene.add(gcsGroup);
+
+    // ---- BFCS (Body-Fixed) axes - solid, bold ----
+    bfcsGroup = new THREE.Group();
+    bfcsGroup.add(makeAxisArrow(new THREE.Vector3(1, 0, 0), '#D94040', axisLength));
+    bfcsGroup.add(makeAxisArrow(new THREE.Vector3(0, 1, 0), '#2EA85A', axisLength));
+    bfcsGroup.add(makeAxisArrow(new THREE.Vector3(0, 0, 1), '#3388CC', axisLength));
+    bfcsGroup.add(makeLabel('x_B', new THREE.Vector3(axisLength + 0.22, 0, 0), '#D94040', 0.25));
+    bfcsGroup.add(makeLabel('y_B', new THREE.Vector3(0, axisLength + 0.22, 0), '#2EA85A', 0.25));
+    bfcsGroup.add(makeLabel('z_B', new THREE.Vector3(0, 0, axisLength + 0.22), '#3388CC', 0.25));
+    bfcsGroup.add(makeBodyShape());
+    scene.add(bfcsGroup);
+
+    // ---- Reference Point P (fixed in global/Earth frame) ----
+    const refGeo = new THREE.SphereGeometry(0.09, 20, 20);
+    const refMat = new THREE.MeshStandardMaterial({ color: 0xE8A838, roughness: 0.3, metalness: 0.2, emissive: 0xE8A838, emissiveIntensity: 0.2 });
+    refPointMesh = new THREE.Mesh(refGeo, refMat);
+    refPointMesh.position.set(1.5, 0, 0);
+    scene.add(refPointMesh); // Attached to scene (global), NOT to bfcsGroup
+
+    // Dashed line from origin to P (global vector)
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(1.5, 0, 0)]);
+    const lineMat = new THREE.LineDashedMaterial({ color: 0xE8A838, dashSize: 0.1, gapSize: 0.06, opacity: 0.45, transparent: true });
+    refLine = new THREE.Line(lineGeo, lineMat);
+    refLine.computeLineDistances();
+    scene.add(refLine);
+
+    // Resize
+    window.addEventListener('resize', () => {
+      const cw = container.clientWidth;
+      const ch = container.clientHeight;
+      camera.aspect = cw / ch;
+      camera.updateProjectionMatrix();
+      renderer.setSize(cw, ch);
+    });
+
+    animate();
+  }
+
+  function update(state) {
+    if (!bfcsGroup) return;
+    const mat4 = MathEngine.toThreeMatrix4(state.matrices.combined);
+    const newQ = new THREE.Quaternion().setFromRotationMatrix(mat4);
+    targetQuaternion.copy(newQ);
+
+    // P is fixed in global frame — update position when user changes coordinates
+    const gp = state.refPointGlobal;
+    targetGlobalPos.set(gp[0], gp[1], gp[2]);
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    if (bfcsGroup) {
+      bfcsGroup.quaternion.slerp(targetQuaternion, 0.1);
+    }
+    if (refPointMesh) {
+      refPointMesh.position.lerp(targetGlobalPos, 0.15);
+      // Update dashed line from origin to P
+      const positions = refLine.geometry.attributes.position;
+      positions.setXYZ(1, refPointMesh.position.x, refPointMesh.position.y, refPointMesh.position.z);
+      positions.needsUpdate = true;
+      refLine.computeLineDistances();
+    }
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  return { init, update };
+})();
+
+
+/* =============================================
+   4. StepNavigator
+   ============================================= */
+const StepNavigator = (() => {
+  const panel = document.getElementById('theory-panel');
+  const tabs = document.querySelectorAll('.step-tab');
+
+  const steps = [
+    {
+      title: 'Introduction',
+      html: `
+        <h2>Global &amp; Body-Fixed Coordinate Systems</h2>
+        <p>In rigid body mechanics, we use two coordinate frames to describe orientation:</p>
+        <p><strong>Global Coordinate System (GCS)</strong> &mdash; A fixed, inertial reference frame. Shown as <em>dashed</em> axes in the 3D viewer.</p>
+        <p><strong>Body-Fixed Coordinate System (BFCS)</strong> &mdash; Attached to the rigid body and rotates with it. Shown as <em>solid</em> colored axes.</p>
+        <h3>The z-y-x Convention</h3>
+        <p>We perform three sequential rotations to get from GCS to BFCS:</p>
+        <div class="equation-block" id="eq-intro"></div>
+        <p><strong>Step 1:</strong> Yaw &psi; &mdash; rotate about the <strong style="color:var(--axis-z)">z-axis</strong><br>
+        <strong>Step 2:</strong> Pitch &theta; &mdash; rotate about the new <strong style="color:var(--axis-y)">y'-axis</strong><br>
+        <strong>Step 3:</strong> Roll &phi; &mdash; rotate about the new <strong style="color:var(--axis-x)">x''-axis</strong></p>
+        <h3>Reference Point P</h3>
+        <p>To see the transformation in action, we place a <strong style="color:var(--point-color)">fixed point P</strong> in the global (Earth-fixed) frame. As the ship rotates, the same point gets new coordinates in the body-fixed frame: <strong>P<sub>B</sub> = R &middot; P</strong>. The point doesn't move &mdash; only the coordinate system rotates around it.</p>
+      `
+    },
+    {
+      title: 'Yaw &mdash; Rotation about z-axis',
+      html: `
+        <h2>Yaw Rotation (&psi;)</h2>
+        <p>The first rotation is about the <strong style="color:var(--axis-z)">z-axis</strong> by angle &psi;. This is <em>yaw</em> &mdash; like a ship turning left or right on the water surface.</p>
+        <p>The z-axis remains unchanged. The x and y axes rotate in the horizontal plane.</p>
+        <h3>Rotation Matrix R<sub>z</sub>(&psi;)</h3>
+        <div class="equation-block" id="eq-s1"></div>
+        <h3>2D Projection (view from +z)</h3>
+        <div class="diagram-container" id="diagram-s1"></div>
+        <h3>Current Numeric Values</h3>
+        <div class="equation-block" id="eq-s1-num"></div>
+      `
+    },
+    {
+      title: 'Pitch &mdash; Rotation about y-axis',
+      html: `
+        <h2>Pitch Rotation (&theta;)</h2>
+        <p>The second rotation is about the <strong style="color:var(--axis-y)">y'-axis</strong> (y after yaw) by angle &theta;. This is <em>pitch</em> &mdash; like a ship tilting its bow up or down.</p>
+        <p>The y-axis remains unchanged. The x and z axes rotate in the vertical plane.</p>
+        <h3>Rotation Matrix R<sub>y</sub>(&theta;)</h3>
+        <div class="equation-block" id="eq-s2"></div>
+        <h3>2D Projection (view from +y)</h3>
+        <div class="diagram-container" id="diagram-s2"></div>
+        <h3>Current Numeric Values</h3>
+        <div class="equation-block" id="eq-s2-num"></div>
+      `
+    },
+    {
+      title: 'Roll &mdash; Rotation about x-axis',
+      html: `
+        <h2>Roll Rotation (&phi;)</h2>
+        <p>The third rotation is about the <strong style="color:var(--axis-x)">x''-axis</strong> (x after yaw and pitch) by angle &phi;. This is <em>roll</em> &mdash; like a ship tilting to port or starboard.</p>
+        <p>The x-axis remains unchanged. The y and z axes rotate in the lateral plane.</p>
+        <h3>Rotation Matrix R<sub>x</sub>(&phi;)</h3>
+        <div class="equation-block" id="eq-s3"></div>
+        <h3>2D Projection (view from +x)</h3>
+        <div class="diagram-container" id="diagram-s3"></div>
+        <h3>Current Numeric Values</h3>
+        <div class="equation-block" id="eq-s3-num"></div>
+      `
+    },
+    {
+      title: 'Combined Rotation Matrix',
+      html: `
+        <h2>Combined Rotation R</h2>
+        <p>The full rotation matrix is the product of all three individual rotations, applied right to left:</p>
+        <div class="equation-block" id="eq-comb-sym"></div>
+        <p>This maps any vector from the <strong>global (Earth-fixed)</strong> frame to the <strong>body-fixed (ship)</strong> frame:</p>
+        <div class="equation-block" id="eq-comb-use"></div>
+        <h3>Properties of R</h3>
+        <p>&bull; Orthogonal: R<sup>T</sup> = R<sup>&minus;1</sup> (inverse = body&rarr;global)<br>
+        &bull; det(R) = 1 (proper rotation, no reflection)<br>
+        &bull; Rows of R = global unit vectors expressed in body-fixed coordinates</p>
+        <p>Move all three sliders to see how the ship's coordinate system transforms a fixed point P in space. The body-fixed coordinates P<sub>B</sub> change as the ship rotates.</p>
+      `
+    }
+  ];
+
+  function renderStep(state) {
+    const step = steps[state.currentStep];
+    panel.innerHTML = step.html;
+    panel.innerHTML += `
+      <div class="step-nav-buttons">
+        <button class="step-btn" id="prev-step" ${state.currentStep === 0 ? 'disabled' : ''}>&larr; Previous</button>
+        <button class="step-btn" id="next-step" ${state.currentStep === steps.length - 1 ? 'disabled' : ''}>Next &rarr;</button>
+      </div>`;
+
+    document.getElementById('prev-step')?.addEventListener('click', () => StateManager.setStep(Math.max(0, state.currentStep - 1)));
+    document.getElementById('next-step')?.addEventListener('click', () => StateManager.setStep(Math.min(steps.length - 1, state.currentStep + 1)));
+
+    tabs.forEach(t => t.classList.toggle('active', parseInt(t.dataset.step) === state.currentStep));
+
+    renderEquations(state);
+    DiagramRenderer.render(state);
+  }
+
+  function renderEquations(state) {
+    const s = state.currentStep;
+    const rk = (id, tex, dm = true) => {
+      const el = document.getElementById(id);
+      if (el) try { katex.render(tex, el, { displayMode: dm, throwOnError: false }); } catch(e) { el.textContent = tex; }
+    };
+    const fmt = v => (Math.abs(v) < 0.00005 ? '0.0000' : v.toFixed(4));
+    const numMat = m => `\\begin{bmatrix} ${fmt(m[0][0])} & ${fmt(m[0][1])} & ${fmt(m[0][2])} \\\\ ${fmt(m[1][0])} & ${fmt(m[1][1])} & ${fmt(m[1][2])} \\\\ ${fmt(m[2][0])} & ${fmt(m[2][1])} & ${fmt(m[2][2])} \\end{bmatrix}`;
+
+    if (s === 0) rk('eq-intro', 'R = R_x(\\phi) \\cdot R_y(\\theta) \\cdot R_z(\\psi)');
+    if (s === 1) {
+      rk('eq-s1', 'R_z(\\psi) = \\begin{bmatrix} \\cos\\psi & \\sin\\psi & 0 \\\\ -\\sin\\psi & \\cos\\psi & 0 \\\\ 0 & 0 & 1 \\end{bmatrix}');
+      rk('eq-s1-num', numMat(state.matrices.Rz));
+    }
+    if (s === 2) {
+      rk('eq-s2', 'R_y(\\theta) = \\begin{bmatrix} \\cos\\theta & 0 & -\\sin\\theta \\\\ 0 & 1 & 0 \\\\ \\sin\\theta & 0 & \\cos\\theta \\end{bmatrix}');
+      rk('eq-s2-num', numMat(state.matrices.Ry));
+    }
+    if (s === 3) {
+      rk('eq-s3', 'R_x(\\phi) = \\begin{bmatrix} 1 & 0 & 0 \\\\ 0 & \\cos\\phi & \\sin\\phi \\\\ 0 & -\\sin\\phi & \\cos\\phi \\end{bmatrix}');
+      rk('eq-s3-num', numMat(state.matrices.Rx));
+    }
+    if (s === 4) {
+      rk('eq-comb-sym', 'R = R_x(\\phi) \\cdot R_y(\\theta) \\cdot R_z(\\psi)');
+      rk('eq-comb-use', "\\begin{bmatrix} x_B \\\\ y_B \\\\ z_B \\end{bmatrix} = R \\cdot \\begin{bmatrix} x \\\\ y \\\\ z \\end{bmatrix}");
+    }
+  }
+
+  tabs.forEach(t => t.addEventListener('click', () => StateManager.setStep(parseInt(t.dataset.step))));
+
+  return { renderStep };
+})();
+
+
+/* =============================================
+   5. DiagramRenderer
+   ============================================= */
+const DiagramRenderer = (() => {
+  const NS = 'http://www.w3.org/2000/svg';
+  const L = 95;
+
+  function makeSVG(container) {
+    if (!container) return null;
+    container.innerHTML = '';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '-125 -125 250 250');
+    svg.setAttribute('width', '240');
+    svg.setAttribute('height', '240');
+    container.appendChild(svg);
+    return svg;
+  }
+
+  function drawAxis(svg, x2, y2, color, dashed, label, lx, ly) {
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', 0); line.setAttribute('y1', 0);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', color);
+    line.setAttribute('stroke-width', dashed ? '1.5' : '2.8');
+    if (dashed) line.setAttribute('stroke-dasharray', '6,4');
+    line.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(line);
+
+    // Arrow tip
+    const dx = x2, dy = y2, len = Math.sqrt(dx*dx+dy*dy);
+    const ux = dx/len, uy = dy/len, px = -uy, py = ux;
+    const s = 7;
+    const tri = document.createElementNS(NS, 'polygon');
+    tri.setAttribute('points', `${x2},${y2} ${x2-ux*s+px*s*0.4},${y2-uy*s+py*s*0.4} ${x2-ux*s-px*s*0.4},${y2-uy*s-py*s*0.4}`);
+    tri.setAttribute('fill', color);
+    tri.setAttribute('opacity', dashed ? '0.35' : '1');
+    svg.appendChild(tri);
+
+    if (label) {
+      const text = document.createElementNS(NS, 'text');
+      text.setAttribute('x', lx); text.setAttribute('y', ly);
+      text.setAttribute('fill', color);
+      text.setAttribute('font-size', '13');
+      text.setAttribute('font-family', 'JetBrains Mono, monospace');
+      text.setAttribute('font-weight', '700');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'middle');
+      text.textContent = label;
+      svg.appendChild(text);
+    }
+  }
+
+  function drawArc(svg, angle, r, color, label) {
+    if (Math.abs(angle) < 0.02) return;
+    const pts = [];
+    const segments = 30;
+    for (let i = 0; i <= segments; i++) {
+      const t = -angle * (i / segments);
+      pts.push(`${r * Math.cos(t)},${-r * Math.sin(t)}`);
+    }
+    const poly = document.createElementNS(NS, 'polyline');
+    poly.setAttribute('points', pts.join(' '));
+    poly.setAttribute('fill', 'none');
+    poly.setAttribute('stroke', color);
+    poly.setAttribute('stroke-width', '2');
+    poly.setAttribute('stroke-dasharray', '4,3');
+    svg.appendChild(poly);
+
+    if (label) {
+      const mid = -angle / 2;
+      const text = document.createElementNS(NS, 'text');
+      text.setAttribute('x', (r + 15) * Math.cos(mid));
+      text.setAttribute('y', -(r + 15) * Math.sin(mid));
+      text.setAttribute('fill', color);
+      text.setAttribute('font-size', '14');
+      text.setAttribute('font-family', 'Crimson Pro, serif');
+      text.setAttribute('font-style', 'italic');
+      text.setAttribute('font-weight', '600');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'middle');
+      text.textContent = label;
+      svg.appendChild(text);
+    }
+  }
+
+  function renderS1(state) {
+    const svg = makeSVG(document.getElementById('diagram-s1'));
+    if (!svg) return;
+    const a = state.angles.psi;
+    drawAxis(svg, L, 0, '#D94040', true, 'X', L + 14, 0);
+    drawAxis(svg, 0, -L, '#2EA85A', true, 'Y', 0, -L - 14);
+    const c = Math.cos(a), s = Math.sin(a);
+    drawAxis(svg, L*c, -L*s, '#D94040', false, "x'", L*c + 14*c, -L*s - 14*s);
+    drawAxis(svg, -L*s, -L*c, '#2EA85A', false, "y'", -L*s - 14*s, -L*c - 14*c);
+    drawArc(svg, a, 45, '#3388CC', '\u03C8');
+  }
+
+  function renderS2(state) {
+    const svg = makeSVG(document.getElementById('diagram-s2'));
+    if (!svg) return;
+    const a = state.angles.theta;
+    drawAxis(svg, L, 0, '#D94040', true, 'X', L + 14, 0);
+    drawAxis(svg, 0, -L, '#3388CC', true, 'Z', 0, -L - 14);
+    const c = Math.cos(a), s = Math.sin(a);
+    drawAxis(svg, L*c, L*s, '#D94040', false, "x'", L*c + 14, L*s + 14);
+    drawAxis(svg, L*s, -L*c, '#3388CC', false, "z'", L*s + 14, -L*c - 14);
+    drawArc(svg, -a, 45, '#2EA85A', '\u03B8');
+  }
+
+  function renderS3(state) {
+    const svg = makeSVG(document.getElementById('diagram-s3'));
+    if (!svg) return;
+    const a = state.angles.phi;
+    drawAxis(svg, L, 0, '#2EA85A', true, 'Y', L + 14, 0);
+    drawAxis(svg, 0, -L, '#3388CC', true, 'Z', 0, -L - 14);
+    const c = Math.cos(a), s = Math.sin(a);
+    drawAxis(svg, L*c, L*s, '#2EA85A', false, "y'", L*c + 14, L*s + 14);
+    drawAxis(svg, -L*s, -L*c, '#3388CC', false, "z'", -L*s - 14, -L*c - 14);
+    drawArc(svg, a, 45, '#D94040', '\u03C6');
+  }
+
+  return {
+    render(state) {
+      if (state.currentStep === 1) renderS1(state);
+      if (state.currentStep === 2) renderS2(state);
+      if (state.currentStep === 3) renderS3(state);
+    }
+  };
+})();
+
+
+/* =============================================
+   6. MatrixDisplay
+   ============================================= */
+const MatrixDisplay = (() => {
+  const container = document.getElementById('matrix-equation');
+  let prev = { Rx: null, Ry: null, Rz: null, combined: null };
+
+  const f = v => (Math.abs(v) < 0.0005 ? '\u00A00.000' : (v >= 0 ? '\u00A0' : '') + v.toFixed(3));
+
+  function table(matrix, label, prevM, isResult = false) {
+    let h = `<div class="matrix-block ${isResult ? 'result-matrix' : ''}"><div class="matrix-label">${label}</div><table>`;
+    for (let i = 0; i < 3; i++) {
+      h += '<tr>';
+      for (let j = 0; j < 3; j++) {
+        const changed = prevM && Math.abs(matrix[i][j] - prevM[i][j]) > 0.0001;
+        h += `<td class="${changed ? 'pulse' : ''}">${f(matrix[i][j])}</td>`;
+      }
+      h += '</tr>';
+    }
+    return h + '</table></div>';
+  }
+
+  function update(state) {
+    const { Rx, Ry, Rz, combined } = state.matrices;
+    container.innerHTML =
+      table(Rx, 'R<sub>x</sub>(<span class="angle-sym" style="color:var(--axis-x)">&phi;</span>)', prev.Rx) +
+      '<div class="matrix-op">&middot;</div>' +
+      table(Ry, 'R<sub>y</sub>(<span class="angle-sym" style="color:var(--axis-y)">&theta;</span>)', prev.Ry) +
+      '<div class="matrix-op">&middot;</div>' +
+      table(Rz, 'R<sub>z</sub>(<span class="angle-sym" style="color:var(--axis-z)">&psi;</span>)', prev.Rz) +
+      '<div class="matrix-op">=</div>' +
+      table(combined, 'R', prev.combined, true);
+
+    prev = { Rx: Rx.map(r=>[...r]), Ry: Ry.map(r=>[...r]), Rz: Rz.map(r=>[...r]), combined: combined.map(r=>[...r]) };
+    setTimeout(() => container.querySelectorAll('.pulse').forEach(e => e.classList.remove('pulse')), 400);
+  }
+
+  return { update };
+})();
+
+
+/* =============================================
+   7. ReferencePointDisplay
+   ============================================= */
+const ReferencePointDisplay = (() => {
+  const bodyEl = document.getElementById('ref-body');
+  const globalEl = document.getElementById('ref-global');
+  const inputPx = document.getElementById('ref-px');
+  const inputPy = document.getElementById('ref-py');
+  const inputPz = document.getElementById('ref-pz');
+
+  // Wire up input events
+  [inputPx, inputPy, inputPz].forEach(el => {
+    el.addEventListener('input', () => {
+      const x = parseFloat(inputPx.value) || 0;
+      const y = parseFloat(inputPy.value) || 0;
+      const z = parseFloat(inputPz.value) || 0;
+      StateManager.setRefPoint(x, y, z);
+    });
+  });
+
+  const fv = v => (v >= 0 ? '\u00A0' : '') + v.toFixed(2);
+
+  function update(state) {
+    const gp = state.refPointGlobal;  // Fixed point in global (Earth) frame
+    const bp = state.refPointBody;    // Same point in body-fixed (ship) frame: P_B = R · P
+    globalEl.textContent = `[${fv(gp[0])}, ${fv(gp[1])}, ${fv(gp[2])}]`;
+    bodyEl.textContent = `[${fv(bp[0])}, ${fv(bp[1])}, ${fv(bp[2])}]`;
+
+  }
+
+  return { update };
+})();
+
+
+/* =============================================
+   8. SliderControls
+   ============================================= */
+const SliderControls = (() => {
+  const sliders = {
+    psi: document.getElementById('slider-psi'),
+    theta: document.getElementById('slider-theta'),
+    phi: document.getElementById('slider-phi')
+  };
+  const vals = {
+    psi: document.getElementById('val-psi'),
+    theta: document.getElementById('val-theta'),
+    phi: document.getElementById('val-phi')
+  };
+  const rows = {
+    psi: document.getElementById('row-psi'),
+    theta: document.getElementById('row-theta'),
+    phi: document.getElementById('row-phi')
+  };
+  const toRad = d => d * Math.PI / 180;
+  const toDeg = r => r * 180 / Math.PI;
+
+  Object.entries(sliders).forEach(([key, el]) => {
+    el.addEventListener('input', () => StateManager.setAngle(key, toRad(parseFloat(el.value))));
+  });
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    Object.values(sliders).forEach(s => s.value = 0);
+    StateManager.resetAll();
+  });
+
+  function update(state) {
+    Object.entries(state.angles).forEach(([key, rad]) => {
+      vals[key].innerHTML = toDeg(rad).toFixed(1) + '&deg;';
+      sliders[key].value = toDeg(rad);
+    });
+
+    const step = state.currentStep;
+    const activeKeys = step === 0 ? [] : step === 1 ? ['psi'] : step === 2 ? ['theta'] : step === 3 ? ['phi'] : ['psi','theta','phi'];
+    Object.keys(rows).forEach(k => rows[k].classList.toggle('disabled', !activeKeys.includes(k)));
+
+    document.getElementById('gimbal-warning').classList.toggle('visible', Math.abs(toDeg(state.angles.theta)) > 80);
+  }
+
+  return { update };
+})();
+
+
+/* =============================================
+   9. App
+   ============================================= */
+function waitForKatex() {
+  if (typeof katex !== 'undefined') {
+    Viewer3D.init();
+    StateManager.subscribe(state => {
+      StepNavigator.renderStep(state);
+      SliderControls.update(state);
+      MatrixDisplay.update(state);
+      ReferencePointDisplay.update(state);
+      Viewer3D.update(state);
+    });
+  } else {
+    setTimeout(waitForKatex, 80);
+  }
+}
+waitForKatex();
+</script>
+
+</body>
+</html>
