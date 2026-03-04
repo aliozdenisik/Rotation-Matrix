@@ -380,6 +380,36 @@ input[type="range"]::-moz-range-thumb {
   min-width: 60px;
   text-align: right;
   color: var(--text-primary);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: var(--transition);
+  user-select: none;
+}
+.slider-value:hover {
+  background: var(--accent-bg);
+  border-color: var(--border);
+}
+.slider-value-input {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: 64px;
+  text-align: right;
+  color: var(--accent);
+  background: var(--card);
+  border: 1.5px solid var(--accent-light);
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(43,76,126,0.12);
+  -moz-appearance: textfield;
+}
+.slider-value-input::-webkit-inner-spin-button,
+.slider-value-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .slider-footer {
   display: flex;
@@ -1443,18 +1473,57 @@ const SliderControls = (() => {
   };
   const toRad = d => d * Math.PI / 180;
   const toDeg = r => r * 180 / Math.PI;
+  const limits = { psi: [-180, 180], theta: [-89, 89], phi: [-180, 180] };
+  let editingKey = null;
 
   Object.entries(sliders).forEach(([key, el]) => {
     el.addEventListener('input', () => StateManager.setAngle(key, toRad(parseFloat(el.value))));
   });
+
+  Object.entries(vals).forEach(([key, el]) => {
+    el.addEventListener('click', () => {
+      if (editingKey || el.closest('.slider-row')?.classList.contains('disabled')) return;
+      editingKey = key;
+      const currentDeg = toDeg(StateManager.getState().angles[key]);
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'slider-value-input';
+      input.value = currentDeg.toFixed(1);
+      input.min = limits[key][0];
+      input.max = limits[key][1];
+      input.step = '0.5';
+      el.innerHTML = '';
+      el.appendChild(input);
+      input.focus();
+      input.select();
+
+      const commit = () => {
+        if (editingKey !== key) return;
+        let deg = parseFloat(input.value) || 0;
+        deg = Math.max(limits[key][0], Math.min(limits[key][1], deg));
+        editingKey = null;
+        StateManager.setAngle(key, toRad(deg));
+      };
+
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { editingKey = null; update(StateManager.getState()); }
+      });
+    });
+  });
+
   document.getElementById('reset-btn').addEventListener('click', () => {
+    editingKey = null;
     Object.values(sliders).forEach(s => s.value = 0);
     StateManager.resetAll();
   });
 
   function update(state) {
     Object.entries(state.angles).forEach(([key, rad]) => {
-      vals[key].innerHTML = toDeg(rad).toFixed(1) + '&deg;';
+      if (editingKey !== key) {
+        vals[key].innerHTML = toDeg(rad).toFixed(1) + '&deg;';
+      }
       sliders[key].value = toDeg(rad);
     });
 
